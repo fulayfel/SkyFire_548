@@ -30,6 +30,7 @@
 
 enum WarriorSpells
 {
+    SPELL_WARRIOR_RAGING_BLOW                       = 85288,
     SPELL_WARRIOR_ALLOW_RAGING_BLOW                 = 131116,
     SPELL_WARRIOR_BLOODTHIRST_DAMAGE                = 23881,
     SPELL_WARRIOR_BLOODTHIRST_HEAL                  = 117313,
@@ -829,26 +830,33 @@ class spell_warr_raging_blow_proc : public SpellScriptLoader
 public:
     spell_warr_raging_blow_proc() : SpellScriptLoader("spell_warr_raging_blow_proc") {}
 
-    class spell_warr_raging_blow_proc_SpellScript : public SpellScript
+    class spell_warr_raging_blow_proc_AuraScript : public AuraScript
     {
-        PrepareSpellScript(spell_warr_raging_blow_proc_SpellScript);
+        PrepareAuraScript(spell_warr_raging_blow_proc_AuraScript);
 
-        void HandleOnHit()
+        bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
         {
+            if (!sSpellMgr->GetSpellInfo(SPELL_WARRIOR_ALLOW_RAGING_BLOW))
+                return false;
+            return true;
+        }
+
+        void HandleOnProc(ProcEventInfo& eventInfo) {
             if (Player* _player = GetCaster()->ToPlayer())
-                if (_player->GetSpecializationId(_player->GetActiveSpec()) == TALENT_TREE_WARRIOR_FURY && _player->getLevel() >= 30)
+                if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW)) {
                     _player->CastSpell(_player, SPELL_WARRIOR_ALLOW_RAGING_BLOW, true);
+                }
         }
 
         void Register() OVERRIDE
         {
-            OnHit += SpellHitFn(spell_warr_raging_blow_proc_SpellScript::HandleOnHit);
+            OnProc += AuraProcFn(spell_warr_raging_blow_proc_AuraScript::HandleOnProc);
         }
     };
 
-    SpellScript* GetSpellScript() const	OVERRIDE
+    AuraScript* GetAuraScript() const OVERRIDE
     {
-        return new spell_warr_raging_blow_proc_SpellScript();
+        return new spell_warr_raging_blow_proc_AuraScript();
     }
 };
 
