@@ -30,7 +30,6 @@
 
 enum WarriorSpells
 {
-    SPELL_WARRIOR_RAGING_BLOW                       = 85288,
     SPELL_WARRIOR_ALLOW_RAGING_BLOW                 = 131116,
     SPELL_WARRIOR_BLOODTHIRST_DAMAGE                = 23881,
     SPELL_WARRIOR_BLOODTHIRST_HEAL                  = 117313,
@@ -800,7 +799,7 @@ public:
                     {
                         int32 stacks = _player->GetAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW)->GetStackAmount();
 
-                        if (stacks <= 1)
+                        if (stacks > 1)
                         {
                             _player->RemoveAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW);
                         }
