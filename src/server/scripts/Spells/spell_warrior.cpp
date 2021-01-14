@@ -789,7 +789,7 @@ public:
             return true;
         }
 
-        void HandleOnHit()
+        void HandleOnCast()
         {
             if (Player* _player = GetCaster()->ToPlayer())
             {
@@ -798,8 +798,7 @@ public:
                     if (_player->GetAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW))
                     {
                         int32 stacks = _player->GetAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW)->GetStackAmount();
-
-                        if (stacks > 1)
+                        if (stacks <= 1)
                         {
                             _player->RemoveAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW);
                         }
@@ -814,7 +813,7 @@ public:
 
         void Register() OVERRIDE
         {
-            OnHit += SpellHitFn(spell_warr_raging_blow_SpellScript::HandleOnHit);
+            OnCast += SpellCastFn(spell_warr_raging_blow_SpellScript::HandleOnCast);
         }
     };
 
@@ -842,9 +841,8 @@ public:
 
         void HandleOnProc(ProcEventInfo& eventInfo) {
             if (Player* _player = GetCaster()->ToPlayer())
-                if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW)) {
-                    _player->CastSpell(_player, SPELL_WARRIOR_ALLOW_RAGING_BLOW, true);
-                }
+                if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW))
+                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, 2);
         }
 
         void Register() OVERRIDE
