@@ -33,25 +33,17 @@ enum WarlockSpells
 {
     SPELL_WARLOCK_AFTERMATH_STUN                    = 85387,
     SPELL_WARLOCK_CREATE_HEALTHSTONE                = 34130,
-    SPELL_WARLOCK_CURSE_OF_DOOM_EFFECT              = 18662,
-    SPELL_WARLOCK_DEMONIC_CIRCLE_ALLOW_CAST         = 62388,
+
+    SPELL_WARLOCK_DEMONIC_CIRCLE_ALLOW_CAST         = 62388, 
     SPELL_WARLOCK_DEMONIC_CIRCLE_SUMMON             = 48018,
     SPELL_WARLOCK_DEMONIC_CIRCLE_TELEPORT           = 48020,
-    SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELGUARD      = 54508,
-    SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELHUNTER     = 54509,
-    SPELL_WARLOCK_DEMONIC_EMPOWERMENT_IMP           = 54444,
-    SPELL_WARLOCK_DEMONIC_EMPOWERMENT_SUCCUBUS      = 54435,
-    SPELL_WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER    = 54443,
+
     SPELL_WARLOCK_FEL_SYNERGY_HEAL                  = 54181,
 
-    SPELL_WARLOCK_GLYPH_OF_SIPHON_LIFE              = 63106,
-
-
-
     SPELL_WARLOCK_LIFE_TAP_ENERGIZE                 = 31818,
-    SPELL_WARLOCK_LIFE_TAP_ENERGIZE_2               = 32553,
 
     SPELL_WARLOCK_RAIN_OF_FIRE                      = 42223,
+
     SPELL_WARLOCK_SHADOW_TRANCE                     = 17941,
     SPELL_WARLOCK_SIPHON_LIFE_HEAL                  = 63106,
     
@@ -75,6 +67,42 @@ enum MiscSpells
 {
     SPELL_GEN_REPLENISHMENT                         = 57669,
     SPELL_PRIEST_SHADOW_WORD_DEATH                  = 32409
+};
+
+// 111546 - Chaotic Energy
+class spell_warl_chaotic_energy : public SpellScriptLoader
+{
+public:
+    spell_warl_chaotic_energy() : SpellScriptLoader("spell_warl_chaotic_energy") { }
+
+    class spell_warl_chaotic_energy_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_warl_chaotic_energy_AuraScript);
+
+        void HandleEffectCalcSpellMod(AuraEffect const* aurEff, SpellModifier*& spellMod)
+        {
+            if (!spellMod)
+            {
+                spellMod = new SpellModifier(GetAura());
+                spellMod->op = SPELLMOD_COST;
+                spellMod->type = SPELLMOD_PCT;
+                spellMod->spellId = GetId();
+                spellMod->mask = GetSpellInfo()->Effects[aurEff->GetEffIndex()].SpellClassMask;
+            }
+
+            spellMod->value = 1.0f + (aurEff->GetAmount() / 100);
+        }
+
+        void Register() OVERRIDE
+        {
+            DoEffectCalcSpellMod += AuraEffectCalcSpellModFn(spell_warl_chaotic_energy_AuraScript::HandleEffectCalcSpellMod, EFFECT_1, SPELL_AURA_ADD_PCT_MODIFIER);
+        }
+    };
+
+    AuraScript* GetAuraScript() const OVERRIDE
+    {
+        return new spell_warl_chaotic_energy_AuraScript();
+    }
 };
 
 // 710 - Banish
@@ -258,69 +286,6 @@ public:
     }
 };
 
-// 47193 - Demonic Empowerment
-/// Updated 4.3.4
-class spell_warl_demonic_empowerment : public SpellScriptLoader
-{
-public:
-    spell_warl_demonic_empowerment() : SpellScriptLoader("spell_warl_demonic_empowerment") { }
-
-    class spell_warl_demonic_empowerment_SpellScript : public SpellScript
-    {
-        PrepareSpellScript(spell_warl_demonic_empowerment_SpellScript);
-
-        bool Validate(SpellInfo const* /*spellInfo*/) OVERRIDE
-        {
-            if (!sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_SUCCUBUS) || !sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER) || !sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELGUARD) || !sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELHUNTER) || !sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_IMP))
-                return false;
-            return true;
-        }
-
-        void HandleScriptEffect(SpellEffIndex /*effIndex*/)
-        {
-            if (Creature* targetCreature = GetHitCreature())
-            {
-                if (targetCreature->IsPet())
-                {
-                    CreatureTemplate const* ci = sObjectMgr->GetCreatureTemplate(targetCreature->GetEntry());
-                    switch (ci->family)
-                    {
-                    case CREATURE_FAMILY_SUCCUBUS:
-                        targetCreature->CastSpell(targetCreature, SPELL_WARLOCK_DEMONIC_EMPOWERMENT_SUCCUBUS, true);
-                        break;
-                    case CREATURE_FAMILY_VOIDWALKER:
-                    {
-                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(SPELL_WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER);
-                        int32 hp = int32(targetCreature->CountPctFromMaxHealth(GetCaster()->CalculateSpellDamage(targetCreature, spellInfo, 0)));
-                        targetCreature->CastCustomSpell(targetCreature, SPELL_WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER, &hp, NULL, NULL, true);
-                        break;
-                    }
-                    case CREATURE_FAMILY_FELGUARD:
-                        targetCreature->CastSpell(targetCreature, SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELGUARD, true);
-                        break;
-                    case CREATURE_FAMILY_FELHUNTER:
-                        targetCreature->CastSpell(targetCreature, SPELL_WARLOCK_DEMONIC_EMPOWERMENT_FELHUNTER, true);
-                        break;
-                    case CREATURE_FAMILY_IMP:
-                        targetCreature->CastSpell(targetCreature, SPELL_WARLOCK_DEMONIC_EMPOWERMENT_IMP, true);
-                        break;
-                    }
-                }
-            }
-        }
-
-        void Register() OVERRIDE
-        {
-            OnEffectHitTarget += SpellEffectFn(spell_warl_demonic_empowerment_SpellScript::HandleScriptEffect, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
-        }
-    };
-
-    SpellScript* GetSpellScript() const OVERRIDE
-    {
-        return new spell_warl_demonic_empowerment_SpellScript();
-    }
-};
-
 // -47230 - Fel Synergy
 class spell_warl_fel_synergy : public SpellScriptLoader
 {
@@ -392,7 +357,6 @@ public:
     }
 };
 
-
 // 1454 - Life Tap
 /// Updated 4.3.4
 class spell_warl_life_tap : public SpellScriptLoader
@@ -411,8 +375,7 @@ public:
 
         bool Validate(SpellInfo const* /*spellInfo*/) OVERRIDE
         {
-            if (!sSpellMgr->GetSpellInfo(SPELL_WARLOCK_LIFE_TAP_ENERGIZE) ||
-                !sSpellMgr->GetSpellInfo(SPELL_WARLOCK_LIFE_TAP_ENERGIZE_2))
+            if (!sSpellMgr->GetSpellInfo(SPELL_WARLOCK_LIFE_TAP_ENERGIZE))
                 return false;
             return true;
         }
@@ -433,14 +396,6 @@ public:
                     AddPct(mana, aurEff->GetAmount());
 
                 caster->CastCustomSpell(target, SPELL_WARLOCK_LIFE_TAP_ENERGIZE, &mana, NULL, NULL, false);
-
-                // Mana Feed
-                if (AuraEffect const* aurEff = caster->GetAuraEffect(SPELL_AURA_ADD_FLAT_MODIFIER, SPELLFAMILY_WARLOCK, WARLOCK_ICON_ID_MANA_FEED, 0))
-                {
-                    int32 manaFeedVal = aurEff->GetAmount();
-                    ApplyPct(manaFeedVal, mana);
-                    caster->CastCustomSpell(caster, SPELL_WARLOCK_LIFE_TAP_ENERGIZE_2, &manaFeedVal, NULL, NULL, true, NULL);
-                }
             }
         }
 
@@ -493,8 +448,7 @@ public:
     }
 };
 
-// -18094 - Nightfall
-// 56218 - Glyph of Corruption
+// 108558 - Nightfall
 class spell_warl_shadow_trance_proc : public SpellScriptLoader
 {
 public:
@@ -514,7 +468,12 @@ public:
         void OnProc(AuraEffect const* aurEff, ProcEventInfo& /*eventInfo*/)
         {
             PreventDefaultAction();
-            GetTarget()->CastSpell(GetTarget(), SPELL_WARLOCK_SHADOW_TRANCE, true, NULL, aurEff);
+
+            // get shadow trace proc chance
+            int32 procChance = std::max(aurEff->GetAmount(), 0);
+
+            if (roll_chance_i(procChance))
+                GetTarget()->CastSpell(GetTarget(), SPELL_WARLOCK_SHADOW_TRANCE, true, NULL, aurEff);
         }
 
         void Register() OVERRIDE
@@ -809,12 +768,13 @@ public:
 
 void AddSC_warlock_spell_scripts()
 {
+    new spell_warl_chaotic_energy();
+
     new spell_warl_banish();
 
     new spell_warl_create_healthstone();
     new spell_warl_demonic_circle_summon();
     new spell_warl_demonic_circle_teleport();
-    new spell_warl_demonic_empowerment();
     
     new spell_warl_fel_synergy();
     
