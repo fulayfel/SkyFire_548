@@ -138,7 +138,8 @@ public:
             return true;
         }
 
-        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
+        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo)
+        {
             if (isCriticalBlock(eventInfo))
                 return true;
             else

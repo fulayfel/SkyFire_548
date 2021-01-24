@@ -829,6 +829,7 @@ public:
 };
 
 // Enrage - 13046
+// Also see: Raging Blow! - 131116
 class spell_warr_raging_blow_proc : public SpellScriptLoader
 {
 public:
@@ -838,8 +839,8 @@ public:
     {
         PrepareAuraScript(spell_warr_raging_blow_proc_AuraScript);
 
-
-        enum Raging_Blow {
+        enum RagingBlow
+        {
             MAXIMUM_RAGING_BLOW_STACKS = 2,
         };
 
@@ -850,10 +851,11 @@ public:
             return true;
         }
 
-        void HandleOnProc(ProcEventInfo& eventInfo) {
+        void HandleOnProc(ProcEventInfo& eventInfo)
+        {
             if (Player* _player = GetCaster()->ToPlayer())
                 if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW))
-                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, Raging_Blow::MAXIMUM_RAGING_BLOW_STACKS);
+                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, RagingBlow::MAXIMUM_RAGING_BLOW_STACKS);
         }
 
         void Register() OVERRIDE
@@ -886,10 +888,13 @@ public:
             return true;
         }
 
-        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
-            if (isCriticalHit(eventInfo)) {
+        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo)
+        {
+            if (isCriticalHit(eventInfo))
+            {
                 uint32 spellThatProccedEnrage = eventInfo.GetDamageInfo()->GetSpellInfo()->Id;
-                switch (spellThatProccedEnrage) {
+                switch (spellThatProccedEnrage)
+                {
                     case SPELL_WARRIOR_MORTAL_STRIKE_AURA:
                     case SPELL_WARRIOR_BLOODTHIRST_DAMAGE:
                     case SPELL_WARRIOR_COLOSSUS_SMASH:
@@ -901,9 +906,7 @@ public:
                 }
             }
             else
-            {
                 return false;
-            }
         }
 
         bool isCriticalHit(ProcEventInfo& eventInfo)
