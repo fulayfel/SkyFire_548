@@ -2498,7 +2498,7 @@ void Player::RegenerateAll()
         if (getClass() == CLASS_DEATH_KNIGHT)
             Regenerate(POWER_RUNIC_POWER);
 
-        if (getClass() == CLASS_WARLOCK && GetSpecializationId(GetActiveSpec()) == SPEC_WARLOCK_DEMONOLOGY)
+        if (getClass() == CLASS_WARLOCK && GetTalentSpecialization(GetActiveSpec()) == SPEC_WARLOCK_DEMONOLOGY)
             Regenerate(POWER_DEMONIC_FURY);
 
         m_regenTimerCount -= 2000;
@@ -4560,6 +4560,7 @@ bool Player::ResetTalents(bool noCost, bool resetTalents, bool resetSpecializati
 
         SetTalentSpecialization(GetActiveSpec(), 0);
         SetUInt32Value(PLAYER_FIELD_CURRENT_SPEC_ID, 0);
+        UpdateTalentSpecializationManaBonus();
     }
 
     SQLTransaction trans = CharacterDatabase.BeginTransaction();
