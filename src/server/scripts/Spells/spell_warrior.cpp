@@ -30,7 +30,6 @@
 
 enum WarriorSpells
 {
-    SPELL_WARRIOR_ALLOW_RAGING_BLOW                 = 131116,
     SPELL_WARRIOR_BLOODTHIRST_DAMAGE                = 23881,
     SPELL_WARRIOR_BLOODTHIRST_HEAL                  = 117313,
     SPELL_WARRIOR_CHARGE                            = 34846,
@@ -59,7 +58,12 @@ enum WarriorSpells
     SPELL_WARRIOR_DEEP_WOUNDS                       = 115767,
     SPELL_WARRIOR_MORTAL_STRIKE_AURA                = 12294,
     SPELL_WARRIOR_T16_DPS_4P_BONUS                  = 144441,
-    SPELL_WARRIOR_T16_DPS_4P_BONUS_PROC             = 144442
+    SPELL_WARRIOR_T16_DPS_4P_BONUS_PROC             = 144442,
+    SPELL_WARRIOR_ENRAGE                            = 13046,
+    SPELL_WARRIOR_ENRAGE_BUFF                       = 12880,
+    SPELL_WARRIOR_ALLOW_RAGING_BLOW                 = 131116,
+    SPELL_WARRIOR_DEVASTATE                         = 20243,
+
 };
 
 enum WarriorSpellIcons
@@ -72,7 +76,7 @@ enum MiscSpells
 {
     SPELL_PALADIN_BLESSING_OF_SANCTUARY             = 20911,
     SPELL_PALADIN_GREATER_BLESSING_OF_SANCTUARY     = 25899,
-    SPELL_PRIEST_RENEWED_HOPE                       = 63944
+    SPELL_PRIEST_RENEWED_HOPE                       = 63944,
 };
 
 // Bloodthirst - 23881
@@ -773,6 +777,7 @@ public:
     }
 };
 
+// 85288 - Raging Blow
 class spell_warr_raging_blow : public SpellScriptLoader
 {
 public:
@@ -789,7 +794,7 @@ public:
             return true;
         }
 
-        void HandleOnHit()
+        void HandleOnCast()
         {
             if (Player* _player = GetCaster()->ToPlayer())
             {
@@ -798,8 +803,7 @@ public:
                     if (_player->GetAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW))
                     {
                         int32 stacks = _player->GetAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW)->GetStackAmount();
-
-                        if (stacks > 1)
+                        if (stacks <= 1)
                         {
                             _player->RemoveAura(SPELL_WARRIOR_ALLOW_RAGING_BLOW);
                         }
@@ -814,7 +818,7 @@ public:
 
         void Register() OVERRIDE
         {
-            OnHit += SpellHitFn(spell_warr_raging_blow_SpellScript::HandleOnHit);
+            OnCast += SpellCastFn(spell_warr_raging_blow_SpellScript::HandleOnCast);
         }
     };
 
@@ -824,6 +828,7 @@ public:
     }
 };
 
+// Enrage - 13046
 class spell_warr_raging_blow_proc : public SpellScriptLoader
 {
 public:
@@ -832,6 +837,11 @@ public:
     class spell_warr_raging_blow_proc_AuraScript : public AuraScript
     {
         PrepareAuraScript(spell_warr_raging_blow_proc_AuraScript);
+
+
+        enum Raging_Blow {
+            MAXIMUM_RAGING_BLOW_STACKS = 2,
+        };
 
         bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
         {
@@ -842,9 +852,8 @@ public:
 
         void HandleOnProc(ProcEventInfo& eventInfo) {
             if (Player* _player = GetCaster()->ToPlayer())
-                if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW)) {
-                    _player->CastSpell(_player, SPELL_WARRIOR_ALLOW_RAGING_BLOW, true);
-                }
+                if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW))
+                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, Raging_Blow::MAXIMUM_RAGING_BLOW_STACKS);
         }
 
         void Register() OVERRIDE
@@ -856,6 +865,64 @@ public:
     AuraScript* GetAuraScript() const OVERRIDE
     {
         return new spell_warr_raging_blow_proc_AuraScript();
+    }
+};
+
+
+// Enrage - 13046
+class spell_warr_enrage : public SpellScriptLoader
+{
+public:
+    spell_warr_enrage() : SpellScriptLoader("spell_warr_enrage") {}
+
+    class spell_warr_enrage_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_warr_enrage_AuraScript);
+
+        bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_WARRIOR_ENRAGE))
+                return false;
+            return true;
+        }
+
+        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
+            if (isCriticalHit(eventInfo)) {
+                uint32 spellThatProccedEnrage = eventInfo.GetDamageInfo()->GetSpellInfo()->Id;
+                switch (spellThatProccedEnrage) {
+                    case SPELL_WARRIOR_MORTAL_STRIKE_AURA:
+                    case SPELL_WARRIOR_BLOODTHIRST_DAMAGE:
+                    case SPELL_WARRIOR_COLOSSUS_SMASH:
+                    case SPELL_WARRIOR_DEVASTATE:
+                    case SPELL_WARRIOR_SHIELD_SLAM:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        bool isCriticalHit(ProcEventInfo& eventInfo)
+        {
+            if (eventInfo.GetHitMask() & PROC_HIT_CRITICAL)
+                return true;
+            else
+                return false;
+        }
+
+        void Register() OVERRIDE
+        {
+            DoCheckProc += AuraCheckProcFn(spell_warr_enrage_AuraScript::HandleOnDoCheckProc);
+        }
+    };
+
+    AuraScript* GetAuraScript() const OVERRIDE
+    {
+        return new spell_warr_enrage_AuraScript();
     }
 };
 
@@ -881,4 +948,5 @@ void AddSC_warrior_spell_scripts()
     new spell_warr_sweeping_strikes();
     new spell_warr_sword_and_board();
     new spell_warr_victorious();
+    new spell_warr_enrage();
 }
