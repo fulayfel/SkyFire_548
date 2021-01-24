@@ -828,6 +828,7 @@ public:
     }
 };
 
+// Enrage - 13046
 class spell_warr_raging_blow_proc : public SpellScriptLoader
 {
 public:
@@ -836,6 +837,11 @@ public:
     class spell_warr_raging_blow_proc_AuraScript : public AuraScript
     {
         PrepareAuraScript(spell_warr_raging_blow_proc_AuraScript);
+
+
+        enum Raging_Blow {
+            MAXIMUM_RAGING_BLOW_STACKS = 2,
+        };
 
         bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
         {
@@ -847,7 +853,7 @@ public:
         void HandleOnProc(ProcEventInfo& eventInfo) {
             if (Player* _player = GetCaster()->ToPlayer())
                 if (_player->HasSpell(SPELL_WARRIOR_RAGING_BLOW))
-                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, 2);
+                    _player->SetAuraStack(SPELL_WARRIOR_ALLOW_RAGING_BLOW, _player, Raging_Blow::MAXIMUM_RAGING_BLOW_STACKS);
         }
 
         void Register() OVERRIDE
@@ -881,43 +887,27 @@ public:
         }
 
         bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
-            SF_LOG_DEBUG("spells.fixes", "in spell_warr_enrage::HandleOnDoCheckProc");
             if (isCriticalHit(eventInfo)) {
-                SF_LOG_DEBUG("spells.fixes", "Enrage procced from critical hits");
                 uint32 spellThatProccedEnrage = eventInfo.GetDamageInfo()->GetSpellInfo()->Id;
                 switch (spellThatProccedEnrage) {
-                case SPELL_WARRIOR_MORTAL_STRIKE_AURA:
-                case SPELL_WARRIOR_BLOODTHIRST_DAMAGE:
-                case SPELL_WARRIOR_COLOSSUS_SMASH:
-                case SPELL_WARRIOR_DEVASTATE:
-                case SPELL_WARRIOR_SHIELD_SLAM:
-                    return true;
-                default:
-                    return false;
+                    case SPELL_WARRIOR_MORTAL_STRIKE_AURA:
+                    case SPELL_WARRIOR_BLOODTHIRST_DAMAGE:
+                    case SPELL_WARRIOR_COLOSSUS_SMASH:
+                    case SPELL_WARRIOR_DEVASTATE:
+                    case SPELL_WARRIOR_SHIELD_SLAM:
+                        return true;
+                    default:
+                        return false;
                 }
             }
-            else if (isCriticalBlock(eventInfo))
-            {
-                return true;
-            }
             else
             {
                 return false;
             }
-        }
-
-        bool isCriticalBlock(ProcEventInfo& eventInfo)
-        {
-            SF_LOG_DEBUG("spells.fixes", "hitmask: %a", eventInfo.GetHitMask());
-            if (eventInfo.GetHitMask() & PROC_HIT_CRITICAL & PROC_HIT_BLOCK)
-                return true;
-            else
-                return false;
         }
 
         bool isCriticalHit(ProcEventInfo& eventInfo)
         {
-            SF_LOG_DEBUG("spells.fixes", "hitmask: %a", eventInfo.GetHitMask());
             if (eventInfo.GetHitMask() & PROC_HIT_CRITICAL)
                 return true;
             else
@@ -934,54 +924,6 @@ public:
     {
         return new spell_warr_enrage_AuraScript();
     }
-};
-
-class spell_warr_enrage_proc : public SpellScriptLoader
-{
-public:
-    spell_warr_enrage_proc() : SpellScriptLoader("spell_warr_enrage_proc") {}
-
-    class spell_warr_enrage_proc_AuraScript : public AuraScript
-    {
-        PrepareAuraScript(spell_warr_enrage_proc_AuraScript);
-
-        bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
-        {
-            if (!sSpellMgr->GetSpellInfo(SPELL_WARRIOR_ENRAGE_BUFF))
-                return false;
-            return true;
-        }
-
-        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
-            SF_LOG_DEBUG("spells.fixes", "in spell_warr_enrage_proc::HandleOnDoCheckProc");
-            if (isCriticalBlock(eventInfo))
-                return true;
-            else
-                return false;
-        }
-
-        bool isCriticalBlock(ProcEventInfo& eventInfo)
-        {
-            SF_LOG_DEBUG("spells.fixes", "hitmask: %x", eventInfo.GetHitMask());
-            if (eventInfo.GetHitMask() & PROC_HIT_CRITICAL & PROC_HIT_BLOCK)
-                return true;
-            else
-                return false;
-        }
-
-        void Register() OVERRIDE
-        {
-            DoCheckProc += AuraCheckProcFn(spell_warr_enrage_proc_AuraScript::HandleOnDoCheckProc);
-        }
-    };
-
-    AuraScript* GetAuraScript() const OVERRIDE
-    {
-        return new spell_warr_enrage_proc_AuraScript();
-    }
-
-
-
 };
 
 void AddSC_warrior_spell_scripts()
@@ -1007,5 +949,4 @@ void AddSC_warrior_spell_scripts()
     new spell_warr_sword_and_board();
     new spell_warr_victorious();
     new spell_warr_enrage();
-    new spell_warr_enrage_proc();
 }
