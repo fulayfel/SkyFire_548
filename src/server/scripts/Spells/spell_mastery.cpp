@@ -120,6 +120,51 @@ public:
     }
 };
 
+// Warrior Spell: Mastery: Critical Block - 76857
+// Triggers Enrage - 12880
+class spell_mastery_critical_block : public SpellScriptLoader
+{
+public:
+    spell_mastery_critical_block() : SpellScriptLoader("spell_mastery_critical_block") {}
+
+    class spell_mastery_critical_block_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_mastery_critical_block_AuraScript);
+
+        bool Validate(SpellInfo const* /*spellEntry*/) OVERRIDE
+        {
+            if (!sSpellMgr->GetSpellInfo(MASTERY_WARRIOR_PROTECTION))
+                return false;
+            return true;
+        }
+
+        bool HandleOnDoCheckProc(ProcEventInfo& eventInfo) {
+            if (isCriticalBlock(eventInfo))
+                return true;
+            else
+                return false;
+        }
+
+        bool isCriticalBlock(ProcEventInfo& eventInfo)
+        {
+            if (eventInfo.GetHitMask() & PROC_HIT_CRITICAL & PROC_HIT_BLOCK)
+                return true;
+            else
+                return false;
+        }
+
+        void Register() OVERRIDE
+        {
+            DoCheckProc += AuraCheckProcFn(spell_mastery_critical_block_AuraScript::HandleOnDoCheckProc);
+        }
+    };
+
+    AuraScript* GetAuraScript() const OVERRIDE
+    {
+        return new spell_mastery_critical_block_AuraScript();
+    }
+};
+
 // Called by Power Word : Shield - 17, Power Word : Shield (Divine Insight) - 123258, Spirit Shell - 114908, Angelic Bulwark - 114214 and Divine Aegis - 47753
 // Mastery : Shield Discipline - 77484
 class spell_mastery_shield_discipline : public SpellScriptLoader
@@ -450,6 +495,7 @@ public:
 void AddSC_masteries_spell_scripts()
 {
     new spell_mastery_unshackled_fury();
+    new spell_mastery_critical_block();
     new spell_mastery_shield_discipline();
     new spell_mastery_combo_breaker();
     new spell_mastery_blood_shield();
